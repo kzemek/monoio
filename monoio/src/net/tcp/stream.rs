@@ -3,6 +3,7 @@ use crate::{
     buf::{IoBuf, IoBufMut, IoVecBuf, IoVecBufMut},
     driver::{op::Op, shared_fd::SharedFd},
     io::{AsyncReadRent, AsyncWriteRent},
+    net::ListenerConfig,
 };
 
 use std::{
@@ -46,7 +47,17 @@ impl TcpStream {
 
     /// Establishe a connection to the specified `addr`.
     pub async fn connect_addr(addr: SocketAddr) -> io::Result<Self> {
-        let op = Op::connect(libc::SOCK_STREAM, addr)?;
+        let config = ListenerConfig::default()
+            .reuse_port(false)
+            .reuse_addr(false)
+            .ip_transparent(false);
+
+        Self::connect_addr_with_config(addr, &config).await
+    }
+
+    /// Establishe a connection to the specified `addr` with `config`.
+    pub async fn connect_addr_with_config(addr: SocketAddr, config: &ListenerConfig) -> io::Result<Self> {
+        let op = Op::connect(libc::SOCK_STREAM, addr, &config)?;
         let completion = op.await;
         completion.meta.result?;
 

@@ -1,4 +1,5 @@
-use super::{super::shared_fd::SharedFd, Op, OpAble};
+use super::{super::super::net::ListenerConfig, super::shared_fd::SharedFd, Op, OpAble};
+use nix::sys::socket::{self, sockopt};
 
 #[cfg(feature = "legacy")]
 use crate::driver::legacy::ready::Direction;
@@ -18,16 +19,30 @@ impl Op<Connect> {
     pub(crate) fn connect(
         socket_type: libc::c_int,
         socket_addr: SocketAddr,
+        config: &ListenerConfig,
     ) -> io::Result<Op<Connect>> {
         let domain = match socket_addr {
             SocketAddr::V4(_) => libc::AF_INET,
             SocketAddr::V6(_) => libc::AF_INET6,
         };
-        let socket = super::new_socket(domain, socket_type)?;
+        let sock = super::new_socket(domain, socket_type)?;
         let os_socket_addr = OsSocketAddr::from(socket_addr);
 
+        if config.reuse_port {
+            socket::setsockopt(sock, sockopt::ReusePort, &true)?;
+        }
+        if config.reuse_addr {
+            socket::setsockopt(sock, sockopt::ReuseAddr, &true)?;
+        }
+        if config.ip_transparent {
+            socket::setsockopt(sock, sockopt::IpTransparent, &true)?;
+        }
+        if let Some(ref bind_address) = config.bind_address {
+            socket::bind(sock, &socket::SockaddrStorage::from(*bind_address))?;
+        }
+
         Op::submit_with(Connect {
-            fd: SharedFd::new(socket)?,
+            fd: SharedFd::new(sock)?,
             os_socket_addr,
         })
     }

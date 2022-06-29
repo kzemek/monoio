@@ -41,6 +41,9 @@ impl UnixListener {
         if config.reuse_addr {
             sys_listener.set_reuse_address(true)?;
         }
+        if config.ip_transparent {
+            sys_listener.set_ip_transparent(true)?;
+        }
         if let Some(send_buf_size) = config.send_buf_size {
             sys_listener.set_send_buffer_size(send_buf_size)?;
         }

@@ -5,6 +5,10 @@ pub struct ListenerConfig {
     pub reuse_port: bool,
     /// Whether to enable reuse_addr.
     pub reuse_addr: bool,
+    /// Whether to enable ip_transparent.
+    pub ip_transparent: bool,
+    /// Bind address for connecting sockets.
+    pub bind_address: Option<std::net::SocketAddr>,
     /// Backlog size.
     pub backlog: i32,
     /// Send buffer size or None to use default.
@@ -18,6 +22,8 @@ impl Default for ListenerConfig {
         Self {
             reuse_port: true,
             reuse_addr: true,
+            ip_transparent: false,
+            bind_address: None,
             backlog: 1024,
             send_buf_size: None,
             recv_buf_size: None,
@@ -37,6 +43,20 @@ impl ListenerConfig {
     #[must_use]
     pub fn reuse_addr(mut self, reuse_addr: bool) -> Self {
         self.reuse_addr = reuse_addr;
+        self
+    }
+
+    /// Enable IP_TRANSPARENT
+    #[must_use]
+    pub fn ip_transparent(mut self, ip_transparent: bool) -> Self {
+        self.ip_transparent = ip_transparent;
+        self
+    }
+
+    /// Specify socket bind address
+    #[must_use]
+    pub fn bind_address(mut self, bind_address: std::net::SocketAddr) -> Self {
+        self.bind_address = Some(bind_address);
         self
     }
 
